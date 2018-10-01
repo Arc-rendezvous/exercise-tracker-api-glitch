@@ -1,23 +1,62 @@
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
-
+const User = require('./model/db');
 const cors = require('cors')
 
 const mongoose = require('mongoose')
-mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track' )
-
+mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track', {useMongoClient: true})
+// mongoose.connect(process.env.MLAB_URI, {useNewUrlParser: true})
 app.use(cors())
 
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
-
 
 app.use(express.static('public'))
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
+app.get('/api/exercise/users', (req, res, next) => {
+  User.getAllUsers((err, data) => {
+    if (err) {
+      return next(err)
+    } else {
+      res.send(data)
+    } 
+  })
+})
+
+app.post('/api/exercise/new-user', (req, res, next) => {
+  // req.body = {username: String}
+  const newUsername = req.body.username;
+  User.createNew(newUsername, (err, id) => {
+    if (err) {
+      return next(err)
+    } else if (id == null) {
+      res.send('username already taken')
+    } else {
+      res.send({username: newUsername, id: id})
+    }
+  })
+})
+
+app.post('/api/exercise/add', (req, res, next) => {
+  // req.body = {userId: String, description: String, duration: Number, date: yyyy-mm-dd}
+  const userId = req.body.userId;
+  const newDesc = req.body.description;
+  const duration = req.body.duration;
+  const date = req.body.date;
+  User.addExercise(userId, newDesc, duration, date, (err, log) => {
+    if (err) {
+      return next(err)
+    } else if (log == null) {
+      res.send('username with id ' + userId + ' was not found')
+    } else {
+      res.send(log)
+    }
+  })
+})
 
 // Not found middleware
 app.use((req, res, next) => {
