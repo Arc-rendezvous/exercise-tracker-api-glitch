@@ -410,10 +410,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-FiaFwKl864onHFFUV/a2szAl7X0fxVlSKNdhTf+BM8i8goEgYut8u5P9MqQqIYwvaMxjzVESsoEm/2kfkFH1rg==
-  /nanoid/1.2.3:
+  /nanoid/1.2.5:
     dev: false
     resolution:
-      integrity: sha512-BAnxAdaihzMoszwhqRy8FPOX+dijs7esUEUYTIQ1KsOSKmCVNYnitAMmBDFxYzA6VQYvuUKw7o2K1AcMBTGzIg==
+      integrity: sha512-mOYdCQS3xdgu81Hg3EQEhORykMk53Pkzg15Y6I+O9T3db9qHPf9z6nXzQBCUaHXlQs57eRKotDTzYlYACL+5uA==
   /negotiator/0.6.1:
     dev: false
     engines:
@@ -584,7 +584,7 @@ packages:
       integrity: sha512-BvE/TwpZX4FXExxOxZyRGQQv651MSwmWKZGqvmPcRIjDqWub67kTKuIMx43cZZrS/cBBzwBcNDWoFxt2XEFIpQ==
   /shortid/2.2.13:
     dependencies:
-      nanoid: 1.2.3
+      nanoid: 1.2.5
     dev: false
     resolution:
       integrity: sha512-dBuNnQGKrJNfjunmXI2X7bl1gnMO4PwbNxrTzO1JvilODmL7WyyCtA+DYxe9XunLXmxmgzFIvKPQ6XRAQrr46Q==
@@ -654,4 +654,4 @@ specifiers:
   express: ^4.14.0
   mongodb: ^2.2.14
   mongoose: ^4.7.2
-  shortid: ^2.2.6
+  shortid: ^2.2.13
