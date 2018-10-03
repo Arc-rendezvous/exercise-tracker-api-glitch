@@ -1,5 +1,5 @@
-const shortid = require('shortid');
-const ObjectId = require('mongodb').ObjectID;
+// const shortid = require('shortid');
+const moment = require('moment')
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track', {useMongoClient: true})
@@ -49,35 +49,37 @@ module.exports.createNew = function(usernameToAdd, done) {
   })
 }
 
-// module.exports.getAllUsers = function (done) {
-//   User.find({}, { username: 1, __v: 1 }).exec((err,data) => {
-//     if (err) {
-//       return done(err)
-//     } else {
-//       return done(null, data)
-//     }
-//   })
-// }
+module.exports.getAllUsers = function (done) {
+  User.find({}, { username: 1, __v: 1 }).exec((err,data) => {
+    if (err) {
+      return done(err)
+    } else {
+      return done(null, data)
+    }
+  })
+}
 
-// module.exports.addExercise = function (userId, exerciseToAdd, duration, date, done) {
-//   User.find({ _id: userId }, (err, data) => {
-//     if (err) {
-//       return done(err)
-//     } 
-//     else if (data) {
-//       const newExercise = { description: exerciseToAdd, duration: duration, date: new Date(date) };
-//       console.log(data);
-//       data[0].log.concat([newExercise]);
-//       data[0].save((err, user) => {
-//         if (err) {
-//           return done(err)
-//         } else {
-//           return done(null, user)  
-//         }
-//       })
-//     } 
-//     else {
-//       return done(null, null)
-//     }
-//   })
-// }
+module.exports.addExercise = function (id, description, duration, date, done) {
+  const dateToAdd = (date) ? moment().format("ddd MMM DD YYYY") : moment(date).format("ddd MMM DD YYYY");
+  const newExercise = {description: description, duration: duration, date: dateToAdd};
+  User.findById({_id: mongoose.Types.ObjectId(id)}, (err, data) => {
+    if (err) {
+      return done(err)
+    } else if (data) {
+      User.findOneAndUpdate( // mongodb equivalent findAndModify()
+      { _id: id }, 
+      { $push: {log: newExercise}}, // $set, $inc, ...
+      (err, data) => {
+        if (err) {
+          return done(err)
+        } 
+        else {
+          return done(null, {username: data.username, description: description, duration: duration, _id: id, date: dateToAdd})
+        }
+      })  
+    } else {
+      return done(null, null)
+    }
+  })
+  
+}
