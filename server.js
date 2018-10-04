@@ -18,69 +18,31 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/exercise/users', (req, res, next) => {
-  User.getAllUsers((err, data) => {
-    if (err) {
-      return next(err)
-    } else {
-      res.send(data)
-    } 
-  })
+  User.getAllUsers((err, data) => err ? next(err) : res.send(data))
 })
 
-app.get('/api/exercise/log/', (req, res, next) => {
+app.get('/api/exercise/log', (req, res, next) => {
   // GET /api/exercise/log?{userId}[&from][&to][&limit]
   // using query strings
   const userId = req.query.userId;
-  
-  if (userId) {
-    const dateFrom = req.query.from;
-    const dateTo = req.query.to;
-    const limit = req.query.limit;
-    
-    // find user and filter param by param
-    User.findById({_id: mongoose.Types.ObjectId(userId)}, (err, data) => {
-      if (err) {
-        return next(err)
-      } else if (data) {
-        const output = data;
-        if (dateFrom) {
-          output = output.log.filter(function(e, i) {
-            return e.date >= dateFrom
-          })
-        }
-        if (dateTo) {
-          output = output.log.filter(function(e, i) {
-            return e.date <= dateTo
-          })
-        }
-        if (limit) {
-          output = output.log.filter(function(e, i) {
-            return  i < limit
-          })
-        }
-        res.json(output);
-      } else {
-        return next(err)
-      }
-    })
-  } 
-  else {
-    next();
-  }
+  const dateFrom = req.query.from;
+  const dateTo = req.query.to;
+  const limit = req.query.limit;
+  User.getUserLog(userId, dateFrom, dateTo, limit, (err, data) => {
+    if (err) {
+      return next(err)
+    } else if (data) {
+      res.json(data)
+    } else {
+      res.send(userId + ' not found')
+    }
+  })
 })
 
 app.post('/api/exercise/new-user', (req, res, next) => {
   // req.body = {username: String}
   const newUsername = req.body.username;
-  User.createNew(newUsername, (err, id) => {
-    if (err) {
-      return next(err)
-    } else if (id == null) {
-      res.send('username already taken')
-    } else {
-      res.send({username: newUsername, id: id})
-    }
-  })
+  User.createNew(newUsername, (err, id) => err ? next(err) : id==null ? res.send('username already taken') : res.send({username: newUsername, id: id}))
 })
 
 app.post('/api/exercise/add', (req, res, next) => {
@@ -89,6 +51,7 @@ app.post('/api/exercise/add', (req, res, next) => {
   const newDesc = req.body.description;
   const duration = req.body.duration;
   const date = req.body.date;
+  console.log(date);
   User.addExercise(userId, newDesc, duration, date, (err, log) => {
     if (err) {
       return next(err)
