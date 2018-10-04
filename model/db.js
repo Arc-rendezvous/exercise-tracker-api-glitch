@@ -1,5 +1,5 @@
 // const shortid = require('shortid');
-const moment = require('moment')
+const moment = require('moment');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track', {useMongoClient: true})
@@ -7,6 +7,7 @@ mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track', {
 const userSchema = new Schema ({
   // _id: { type: String, 'default': shortid.generate },
   username: String,
+  count: Number,
   log: [{ description: String, duration: Number, date: Date }]
 });
 const User = mongoose.model('User', userSchema);
@@ -17,7 +18,7 @@ module.exports.createNew = function(usernameToAdd, done) {
       return done(err)
     } 
     else if (!err && count == 0) {
-      const user = new User({ username: usernameToAdd });
+      const user = new User({ username: usernameToAdd, count: 0});
       user.save((err, data) => {
         if (err) {
           return done(err)
@@ -35,7 +36,7 @@ module.exports.createNew = function(usernameToAdd, done) {
           return done(null, null)
         }
         else {
-          const user = new User({ username: usernameToAdd });
+          const user = new User({ username: usernameToAdd, count: 0});
           user.save((err, data) => {
             if (err) {
               return done(err)
@@ -68,7 +69,7 @@ module.exports.addExercise = function (id, description, duration, date, done) {
     } else if (data) {
       User.findOneAndUpdate( // mongodb equivalent findAndModify()
       { _id: id }, 
-      { $push: {log: newExercise}}, // $set, $inc, ...
+      { $push: {log: newExercise}, $inc: {count: 1}},// $set, $inc, ...
       (err, data) => {
         if (err) {
           return done(err)
@@ -80,6 +81,51 @@ module.exports.addExercise = function (id, description, duration, date, done) {
     } else {
       return done(null, null)
     }
-  })
-  
+  }) 
+}
+
+module.exports.getUserLog = function (id, from, to, limit, done) {
+  if (id) {
+    // find user and filter param by param
+    User.findById({_id: mongoose.Types.ObjectId(id)}, (err, data) => {
+      if (err) {
+        return done(err)
+      } else if (data) {
+        const output = data;
+        if (from) {
+          output = output.log.filter(function(e, i) {
+            return e.date >= from
+          })
+        }
+        if (to) {
+          output = output.log.filter(function(e, i) {
+            return e.date <= to
+          })
+        }
+        if (limit) {
+          output = output.log.filter(function(e, i) {
+            return  i < limit
+          })
+        }
+        output.log = sortByKey(output.log, 'date');
+        return done(null, output);
+      } else {
+        return done(err)
+      }
+    })
+  } 
+  else {
+    return done(null, null)
+  }
+}
+
+function sortByKey(array, key) {
+    return array.sort(function(a, b) {
+        let x = a[key]; 
+        let y = b[key];
+        // sort ascending
+        return ( (x < y) ? -1
+               : (x > y) ? 1 
+               : 0);
+    });
 }
