@@ -1,11 +1,13 @@
+// wby use short id if username is already unique...
 const shortid = require('shortid');
+
 const moment = require('moment');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track', {useMongoClient: true})
 
 const userSchema = new Schema ({
-  // shortId: { type: String, unique: true, 'default': shortid.generate },
+  shortId: { type: String, unique: true, 'default': shortid.generate },
   username: String,
   count: Number,
   log: [{ description: String, duration: Number, date: Date }]
@@ -23,8 +25,8 @@ module.exports.createNew = function(usernameToAdd, done) {
         if (err) {
           return done(err)
         } else {
-          return done(null, data._id)
-          // return done(null, data.shortId)
+          // return done(null, data._id)
+          return done(null, data.shortId)
         }
       })
     } 
@@ -42,8 +44,8 @@ module.exports.createNew = function(usernameToAdd, done) {
             if (err) {
               return done(err)
             } else {
-              return done(null, data._id)
-              // return done(null, data.shortId)
+              // return done(null, data._id)
+              return done(null, data.shortId)
             }
           })
         }
@@ -53,8 +55,8 @@ module.exports.createNew = function(usernameToAdd, done) {
 }
 
 module.exports.getAllUsers = function (done) {
-  User.find({}, { username: 1, __v: 1 }).exec((err,data) => {
-  // User.find({}, { _id: 0, username: 1, __v: 1 }).exec((err,data) => {
+  // User.find({}, { username: 1, __v: 1 }).exec((err,data) => {
+  User.find({}, { _id: 0, shortId: 1, username: 1, __v: 1 }).exec((err,data) => {
     if (err) {
       return done(err)
     } else {
@@ -66,12 +68,14 @@ module.exports.getAllUsers = function (done) {
 module.exports.addExercise = function (id, description, duration, date, done) {
   const dateToAdd = (date) ? moment(date).format("ddd MMM DD YYYY") : moment().format("ddd MMM DD YYYY");
   const newExercise = {description: description, duration: duration, date: dateToAdd};
-  User.findById({_id: mongoose.Types.ObjectId(id)}, (err, data) => {
+  // User.findById({_id: mongoose.Types.ObjectId(id)}, (err, data) => {
+  User.findOne({shortId: id}, (err, data) => {
     if (err) {
       return done(err)
     } else if (data) {
       User.findOneAndUpdate( // mongodb equivalent findAndModify()
-      { _id: id }, 
+      // { _id: id }, 
+      { shortId: id },
       { $push: {log: newExercise}, $inc: {count: 1}},// $set, $inc, ...
       (err, data) => {
         if (err) {
@@ -79,6 +83,7 @@ module.exports.addExercise = function (id, description, duration, date, done) {
         } 
         else {
           return done(null, {username: data.username, description: description, duration: duration, _id: id, date: dateToAdd})
+          // return done(null, {username: data.username, description: description, duration: duration, id: id, date: dateToAdd})
         }
       })  
     } else {
@@ -93,13 +98,15 @@ module.exports.getUserLog = function (id, from, to, limit, done) {
     qlimit.limit = Number(limit);
   }
   
-  User.findById({_id: mongoose.Types.ObjectId(id)})
+  // User.findById({_id: mongoose.Types.ObjectId(id)})
+  User.findOne({shortId: id})
       .populate({path: 'log', match: {}, select: '_id', options: qlimit})
       .exec((err, data) => {
       if (err) {
         return done(err)
       } else if (data) {
-        const output = {id: data._id, username: data.username, count: data.count};
+        // const output = {id: data._id, username: data.username, count: data.count};
+        const output = {id: data.shortId, username: data.username, count: data.count};
         output.from = (from) ? moment(from).format('ddd MMM DD YYYY') : 'NA';
         output.to = (to) ? moment(to).format('ddd MMM DD YYYY') : 'NA';
         output.log = data.log.filter(function(e){
