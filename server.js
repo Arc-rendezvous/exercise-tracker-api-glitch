@@ -28,15 +28,19 @@ app.get('/api/exercise/log', (req, res, next) => {
   const dateFrom = req.query.from;
   const dateTo = req.query.to;
   const limit = req.query.limit;
-  User.getUserLog(userId, dateFrom, dateTo, limit, (err, data) => {
-    if (err) {
-      return next(err)
-    } else if (data) {
-      res.json(data)
-    } else {
-      res.send(userId + ' not found')
-    }
-  })
+  if (userId) {
+    User.getUserLog(userId, dateFrom, dateTo, limit, (err, data) => {
+      if (err) {
+        return next(err)
+      } else if (data) {
+        res.send(data)
+      } else {
+        res.send(userId + ' not found')
+      }
+    })
+  } else {
+    res.send('no userId specified');
+  }
 })
 
 app.post('/api/exercise/new-user', (req, res, next) => {
