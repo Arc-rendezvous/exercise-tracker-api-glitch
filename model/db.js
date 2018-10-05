@@ -1,11 +1,11 @@
-// const shortid = require('shortid');
+const shortid = require('shortid');
 const moment = require('moment');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track', {useMongoClient: true})
 
 const userSchema = new Schema ({
-  // _id: { type: String, 'default': shortid.generate },
+  // shortId: { type: String, unique: true, 'default': shortid.generate },
   username: String,
   count: Number,
   log: [{ description: String, duration: Number, date: Date }]
@@ -24,6 +24,7 @@ module.exports.createNew = function(usernameToAdd, done) {
           return done(err)
         } else {
           return done(null, data._id)
+          // return done(null, data.shortId)
         }
       })
     } 
@@ -42,6 +43,7 @@ module.exports.createNew = function(usernameToAdd, done) {
               return done(err)
             } else {
               return done(null, data._id)
+              // return done(null, data.shortId)
             }
           })
         }
@@ -52,6 +54,7 @@ module.exports.createNew = function(usernameToAdd, done) {
 
 module.exports.getAllUsers = function (done) {
   User.find({}, { username: 1, __v: 1 }).exec((err,data) => {
+  // User.find({}, { _id: 0, username: 1, __v: 1 }).exec((err,data) => {
     if (err) {
       return done(err)
     } else {
@@ -61,7 +64,7 @@ module.exports.getAllUsers = function (done) {
 }
 
 module.exports.addExercise = function (id, description, duration, date, done) {
-  const dateToAdd = (date) ? moment().format("ddd MMM DD YYYY") : moment(date).format("ddd MMM DD YYYY");
+  const dateToAdd = (date) ? moment(date).format("ddd MMM DD YYYY") : moment().format("ddd MMM DD YYYY");
   const newExercise = {description: description, duration: duration, date: dateToAdd};
   User.findById({_id: mongoose.Types.ObjectId(id)}, (err, data) => {
     if (err) {
@@ -85,38 +88,38 @@ module.exports.addExercise = function (id, description, duration, date, done) {
 }
 
 module.exports.getUserLog = function (id, from, to, limit, done) {
-  if (id) {
-    // find user and filter param by param
-    User.findById({_id: mongoose.Types.ObjectId(id)}, (err, data) => {
+  let qlimit = {};
+  if (limit) {
+    qlimit.limit = Number(limit);
+  }
+  
+  User.findById({_id: mongoose.Types.ObjectId(id)})
+      .populate({path: 'log', match: {}, select: '_id', options: qlimit})
+      .exec((err, data) => {
       if (err) {
         return done(err)
       } else if (data) {
-        const output = data;
-        if (from) {
-          output = output.log.filter(function(e, i) {
-            return e.date >= from
-          })
-        }
-        if (to) {
-          output = output.log.filter(function(e, i) {
-            return e.date <= to
-          })
-        }
-        if (limit) {
-          output = output.log.filter(function(e, i) {
-            return  i < limit
-          })
-        }
+        const output = {id: data._id, username: data.username, count: data.count};
+        output.from = (from) ? moment(from).format('ddd MMM DD YYYY') : 'NA';
+        output.to = (to) ? moment(to).format('ddd MMM DD YYYY') : 'NA';
+        output.log = data.log.filter(function(e){
+          if (from && to) {
+            return e.date <= moment(to) && e.date >= moment(from)
+          } 
+          if (from) {
+            return e.date >= moment(from)
+          } 
+          if (to) {
+            return e.date <= moment(to)
+          } 
+            return true
+        })
         output.log = sortByKey(output.log, 'date');
-        return done(null, output);
+        return done(null, output)
       } else {
-        return done(err)
+        return done(null, null)
       }
-    })
-  } 
-  else {
-    return done(null, null)
-  }
+  })
 }
 
 function sortByKey(array, key) {
